@@ -189,12 +189,7 @@ public class CreateNoteActivity extends AppCompatActivity {
             inputNoteSubtitle.requestFocus();
             return;
         }
-        else if(inputNoteText.getText().toString().trim().isEmpty())
-        {
-            inputNoteText.setError("Note  can't be empty");
-            inputNoteText.requestFocus();
-            return;
-        }
+
 
         final Note note = new Note();
         note.setTitle(inputNoteTitle.getText().toString());
@@ -643,5 +638,15 @@ public class CreateNoteActivity extends AppCompatActivity {
        }
        dialogAddURL.show();
    }
-    
+
+
+   //experimenting
+    protected void onPause() {
+        super.onPause();
+        if (dialogDeleteNote != null && dialogDeleteNote.isShowing()) {
+            dialogDeleteNote.dismiss();
+        }
+    }
+
+
 }

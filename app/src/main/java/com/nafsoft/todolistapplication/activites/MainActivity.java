@@ -35,6 +35,19 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
 
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.LoadAdError;
+import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.initialization.InitializationStatus;
+import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
+import com.google.android.gms.ads.interstitial.InterstitialAd;
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
+import com.google.android.ump.ConsentDebugSettings;
+import com.google.android.ump.ConsentForm;
+import com.google.android.ump.ConsentInformation;
+import com.google.android.ump.ConsentRequestParameters;
+import com.google.android.ump.UserMessagingPlatform;
 import com.nafsoft.todolistapplication.R;
 import com.nafsoft.todolistapplication.activites.CreateNoteActivity;
 import com.nafsoft.todolistapplication.adapters.NotesAdapter;
@@ -44,6 +57,7 @@ import com.nafsoft.todolistapplication.listeners.NotesListener;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MainActivity extends AppCompatActivity implements NotesListener {
 
@@ -62,15 +76,24 @@ public class MainActivity extends AppCompatActivity implements NotesListener {
     private int noteClickedPosition=-1;
     private AlertDialog dialogAddURL;
 
+    //for ad
+
+    private AdView mAdView;
+    private InterstitialAd mInterstitialAd;
+
 
     //update code end
 
-    EditText editText;
-    Button button;
-    ListView listView;
-    ArrayList<String > itemList = new ArrayList<>();
-    ArrayAdapter<String> arrayAdapter;
-    //add code
+    //gdpr message
+
+    private ConsentInformation consentInformation;
+    // Use an atomic boolean to initialize the Google Mobile Ads SDK and load ads once.
+    private final AtomicBoolean isMobileAdsInitializeCalled = new AtomicBoolean(false);
+
+    private static final String TAG = "Consent_form";
+
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,6 +105,8 @@ public class MainActivity extends AppCompatActivity implements NotesListener {
         imageViewAddNoteMain.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+
+
                 startActivityForResult(
                         new Intent(getApplicationContext(), CreateNoteActivity.class),
                         REQUEST_CODE_ADD_NOTE
@@ -200,22 +225,8 @@ public class MainActivity extends AppCompatActivity implements NotesListener {
 
         //update code end
 
-//        editText = findViewById(R.id.editText);
-//        button = findViewById(R.id.button1);
-//        listView = findViewById(R.id.list1);
-//
-//        itemList = FileHelper.readData(this);
-//        arrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1,android.R.id.text1,itemList);
-//
-//        listView.setAdapter(arrayAdapter);
-//
-//
-//
-//
-//
-//
-//
-//
+
+
 //        button.setOnClickListener(view -> {
 //
 //
@@ -267,8 +278,10 @@ public class MainActivity extends AppCompatActivity implements NotesListener {
 //            }
 //        });
 //
-//             banner_add();
-//        interstitial_add();
+        //showing ad
+        //id :0C032E2535FAC8B36AC5561B31E85D30
+            requestConsentForm();
+
 
 
     }
@@ -396,11 +409,13 @@ public class MainActivity extends AppCompatActivity implements NotesListener {
         if(requestCode == REQUEST_CODE_ADD_NOTE && resultCode == RESULT_OK)
         {
             getNotes(REQUEST_CODE_ADD_NOTE,false);
+            showInterstitialAd();
         } else if (requestCode == REQUEST_CODE_UPDATE_NOTE && resultCode == RESULT_OK) {
 
             if(data != null)
             {
                 getNotes(REQUEST_CODE_UPDATE_NOTE,data.getBooleanExtra("isNoteDeleted",false));
+                showInterstitialAd();
             }
 
         } else if (requestCode == REQUEST_CODE_SELECT_IMAGE && resultCode == RESULT_OK) {
@@ -490,39 +505,106 @@ public class MainActivity extends AppCompatActivity implements NotesListener {
     }
 
 
-    //    private void banner_add()
-//    {
-//        MobileAds.initialize(this, new OnInitializationCompleteListener() {
-//            @Override
-//            public void onInitializationComplete(InitializationStatus initializationStatus) {
-//            }
-//        });
-//
-//        mAdView = findViewById(R.id.adView);
-//        AdRequest adRequest = new AdRequest.Builder().build();
-//        mAdView.loadAd(adRequest);
-//    }
-//    private void interstitial_add()
-//    {
-//        AdRequest adRequest = new AdRequest.Builder().build();
-//
-//        InterstitialAd.load(this,"ca-app-pub-3940256099942544/1033173712", adRequest,
-//                new InterstitialAdLoadCallback() {
-//                    @Override
-//                    public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {
-//                        // The mInterstitialAd reference will be null until
-//                        // an ad is loaded.
-//                        mInterstitialAd = interstitialAd;
-//                        Log.i("TAG", "onAdLoaded");
-//                    }
-//
-//                    @Override
-//                    public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
-//                        // Handle the error
-//                        Log.d("TAG", loadAdError.toString());
-//                        mInterstitialAd = null;
-//                    }
-//                });
-//
-//    }
+    public void requestConsentForm()
+    {
+
+        // Create a ConsentRequestParameters object.
+        ConsentRequestParameters params = new ConsentRequestParameters
+                .Builder()
+                .build();
+
+        consentInformation = UserMessagingPlatform.getConsentInformation(this);
+        consentInformation.requestConsentInfoUpdate(
+                this,
+                params,
+                (ConsentInformation.OnConsentInfoUpdateSuccessListener) () -> {
+                    UserMessagingPlatform.loadAndShowConsentFormIfRequired(
+                            this,
+                            (ConsentForm.OnConsentFormDismissedListener) loadAndShowError -> {
+                                if (loadAndShowError != null) {
+                                    // Consent gathering failed.
+                                    Log.w(TAG, String.format("%s: %s",
+                                            loadAndShowError.getErrorCode(),
+                                            loadAndShowError.getMessage()));
+                                }
+
+                                // Consent has been gathered.
+                                if (consentInformation.canRequestAds()) {
+                                    initializeMobileAdsSdk();
+                                }
+                            }
+                    );
+                },
+                (ConsentInformation.OnConsentInfoUpdateFailureListener) requestConsentError -> {
+                    // Consent gathering failed.
+                    Log.w(TAG, String.format("%s: %s",
+                            requestConsentError.getErrorCode(),
+                            requestConsentError.getMessage()));
+
+                });
+
+        // Check if you can initialize the Google Mobile Ads SDK in parallel
+        // while checking for new consent information. Consent obtained in
+        // the previous session can be used to request ads.
+        if (consentInformation.canRequestAds()) {
+            initializeMobileAdsSdk();
+        }
+
+    }
+
+
+    private void initializeMobileAdsSdk() {
+        if (isMobileAdsInitializeCalled.getAndSet(true)) {
+            return;
+        }
+
+        // Initialize the Google Mobile Ads SDK.
+        MobileAds.initialize(this);
+        banner_add();
+        interstitial_add();
+
+        // TODO: Request an ad.
+        // InterstitialAd.load(...);
+    }
+
+
+
+
+
+        private void banner_add()
+    {
+
+        mAdView = findViewById(R.id.adView);
+        AdRequest adRequest = new AdRequest.Builder().build();
+        mAdView.loadAd(adRequest);
+    }
+    private void showInterstitialAd()
+    {
+        if (mInterstitialAd != null) {
+            mInterstitialAd.show(MainActivity.this);
+        } else {
+            Log.d("TAG", "The interstitial ad wasn't ready yet.");
+        }
+    }
+    private void interstitial_add()
+    {
+        AdRequest adRequest = new AdRequest.Builder().build();
+
+        InterstitialAd.load(this,"ca-app-pub-3940256099942544/1033173712", adRequest,
+                new InterstitialAdLoadCallback() {
+                    @Override
+                    public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {
+
+                        mInterstitialAd = interstitialAd;
+                        Log.i("TAG", "onAdLoaded");
+                    }
+
+                    @Override
+                    public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+                        Log.d("TAG", loadAdError.toString());
+                        mInterstitialAd = null;
+                    }
+                });
+
+    }
 }

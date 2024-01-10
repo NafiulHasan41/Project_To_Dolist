@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">ToDOLisT You may not use</string>
+    <string name="app_name">ToDOLisT</string>
     <string name="view">YOU WILL NOT COMPLETE  YOUR LIST. I DARE YOU!!</string>
     <string name="note_title">Note Title</string>
     <string name="type_your_note_here">Type your note here...</string>

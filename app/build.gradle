@@ -11,7 +11,7 @@ android {
         minSdk 23
         targetSdk 34
         versionCode 2
-        versionName "1.0.1"
+        versionName "2.0.0"
 
 
         multiDexEnabled true
@@ -54,6 +54,14 @@ dependencies {
     implementation'com.intuit.ssp:ssp-android:1.1.0'
     //Rounded imageView
     implementation'com.makeramen:roundedimageview:2.3.0'
+
+    //add implementation
+    implementation 'com.google.android.gms:play-services-ads-base:22.4.0'
+    implementation 'com.google.android.gms:play-services-ads-lite:22.4.0'
+
+    //gdpr message
+
+    implementation 'com.google.android.ump:user-messaging-platform:2.1.0'
 
 
 

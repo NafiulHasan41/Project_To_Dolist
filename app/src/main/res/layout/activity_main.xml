@@ -56,6 +56,29 @@
 
 
     </LinearLayout>
+    <LinearLayout
+        android:id="@+id/addBanner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:background="@color/colorPrimary"
+        app:layout_constraintBottom_toTopOf="@id/noteRecyclerView"
+        app:layout_constraintTop_toBottomOf="@id/layoutSearch"
+        >
+        <com.google.android.gms.ads.AdView
+            xmlns:ads="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/adView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_alignParentBottom="true"
+            ads:adSize="BANNER"
+            ads:adUnitId="ca-app-pub-3940256099942544/6300978111">
+        </com.google.android.gms.ads.AdView>
+
+
+    </LinearLayout>
+
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/noteRecyclerView"
@@ -68,7 +91,7 @@
         android:paddingEnd="@dimen/_12sdp"
         android:paddingBottom="@dimen/_12sdp"
         app:layout_constraintBottom_toTopOf="@id/layoutQuickAction"
-        app:layout_constraintTop_toBottomOf="@id/layoutSearch"/>
+        app:layout_constraintTop_toBottomOf="@id/addBanner"/>
 
     <LinearLayout
         android:id="@+id/layoutQuickAction"
